@@ -31,9 +31,7 @@ const LoginScreen = ({ navigation }) => {
       password: password,
     };
     const res = await loginUserApi(request);
-    console.log("res", res);
     if (res?.token) {
-      console.log("res", res);
       navigation.navigate("Home");
       AsyncStorage.setItem("token", res.token);
       setEmail("");
@@ -53,8 +51,8 @@ const LoginScreen = ({ navigation }) => {
           <Text style={styles.emainAndPassFont}>Email</Text>
           <InputText
             value={email}
-            placeholder={"Enter Your Email"}
             inputStyle={styles.inputStyle}
+            placeholder={"Enter Your Email"}
             onChange={(txt) => setEmail(txt)}
           />
         </View>
@@ -63,20 +61,20 @@ const LoginScreen = ({ navigation }) => {
           <InputText
             value={password}
             secureTextEntry={true}
-            placeholder={"Enter Your Password"}
             inputStyle={styles.inputStyle}
+            placeholder={"Enter Your Password"}
             onChange={(txt) => setPassword(txt)}
           />
         </View>
         <ButtonConst
-          onPress={onLoginPress}
           title={"LogIn"}
+          onPress={onLoginPress}
           titleStyle={styles.loginFont}
           buttonStyle={styles.loginButton}
         />
         <ButtonConst
-          buttonStyle={styles.signupView}
           titleStyle={styles.signupFont}
+          buttonStyle={styles.signupView}
           title={"Don't have an account? Sign up"}
           onPress={() => navigation.navigate("Reigester")}
         />

@@ -1,22 +1,22 @@
-import { StyleSheet, Text, View } from "react-native";
-import React, { useContext, useEffect, useState } from "react";
-import { UserType } from "../../userContext";
-import { getUerApi } from "../services/APIAction";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import jwt_decode from "jwt-decode";
 import Users from "../components/Users";
+import { UserType } from "../../userContext";
+import { getUerApi } from "../services/APIAction";
+import { StyleSheet, View } from "react-native";
+import React, { useContext, useEffect, useState } from "react";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
-const Homescreen = ({ navigation }) => {
-  const { userId, setUserId } = useContext(UserType);
+const Homescreen = () => {
+  const { setUserId } = useContext(UserType);
 
   const [userData, setUserData] = useState([]);
-  console.log("userData", userData);
 
   useEffect(() => {
     (async () => {
       const token = await AsyncStorage.getItem("token");
       const decoded = jwt_decode(token);
       const userId = decoded.userId;
+      setUserId(userId);
       const getUser = await getUerApi(userId);
       setUserData(getUser);
     })();

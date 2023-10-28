@@ -1,21 +1,79 @@
-import { Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
-import React from "react";
+import {
+  getUserFriendsAPI,
+  sendFriendRequest,
+  getSentFriendrequest,
+} from "../services/APIAction";
 import ButtonConst from "./ButtonConst";
+import { UserType } from "../../userContext";
+import React, { useContext, useEffect, useState } from "react";
+import { Image, StyleSheet, Text, View } from "react-native";
 
 const Users = ({ item }) => {
+  const { userId, setUserId } = useContext(UserType);
+  const [requestSent, setRequestSent] = useState([]);
+  const [userFriends, setUserFriends] = useState([]);
+
+  useEffect(() => {
+    (async () => {
+      getFriend();
+    })();
+  }, []);
+
+  const getFriend = async () => {
+    const getAllMessage = await getSentFriendrequest(userId);
+    const getUserfriends = await getUserFriendsAPI(userId);
+    setUserFriends(getUserfriends);
+    setRequestSent(getAllMessage);
+  };
+
+  const onSendButtonPress = async (item) => {
+    try {
+      let request = {
+        currentUserId: userId,
+        selectedUserId: item,
+      };
+      const sendrequest = await sendFriendRequest(request);
+      if (sendrequest == "OK") {
+      }
+      getFriend();
+    } catch (error) {
+      console.log("error on onSendButtonPress", error);
+    }
+  };
+
   return (
-    <TouchableOpacity style={styles.containerView}>
+    <View style={styles.containerView}>
       <Image source={{ uri: item?.image }} style={styles.imageStyle} />
       <View style={styles.textView}>
         <Text style={styles.nameFont}>{item?.name}</Text>
         <Text style={styles.emailFont}>{item?.email}</Text>
       </View>
       <ButtonConst
-        title={"Add Friend"}
-        buttonStyle={styles.buttonStyle}
+        disabled={
+          userFriends?.includes(item?._id) ||
+          requestSent?.some((i) => i?._id == item?._id)
+        }
+        onPress={() => onSendButtonPress(item?._id)}
+        title={
+          userFriends?.includes(item?._id)
+            ? "Friends"
+            : requestSent?.some((i) => i?._id == item?._id)
+            ? "Request Sent"
+            : "Add Friend"
+        }
+        buttonStyle={[
+          styles.buttonStyle,
+          {
+            backgroundColor: userFriends?.includes(item?._id)
+              ? "green"
+              : requestSent?.some((i) => i?._id == item?._id)
+              ? "gray"
+              : "#567189",
+          },
+        ]}
         titleStyle={styles.buttontitlestyle}
       />
-    </TouchableOpacity>
+    </View>
   );
 };
 
@@ -41,7 +99,6 @@ const styles = StyleSheet.create({
     width: 105,
     padding: 10,
     borderRadius: 6,
-    backgroundColor: "#567189",
   },
   buttontitlestyle: {
     fontSize: 13,

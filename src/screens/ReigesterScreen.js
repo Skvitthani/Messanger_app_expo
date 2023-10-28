@@ -1,9 +1,9 @@
 import {
-  KeyboardAvoidingView,
-  StyleSheet,
   Text,
-  TextInput,
   View,
+  Alert,
+  StyleSheet,
+  KeyboardAvoidingView,
 } from "react-native";
 import React, { useState } from "react";
 import InputText from "../components/InputText";
@@ -11,26 +11,26 @@ import ButtonConst from "../components/ButtonConst";
 import { registerUserApi } from "../services/APIAction";
 
 const ReigesterScreen = ({ navigation }) => {
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [name, setName] = useState("");
-  const [image, setImage] = useState("");
+  const [image, setImage] = useState("https://picsum.photos/200");
 
   const onRegisterPress = async () => {
     const request = {
       name: name,
       email: email,
-      password: password,
       image: image,
+      password: password,
     };
     const res = await registerUserApi(request);
-    console.log("res", res);
     if (res?.message == "User Entered Sucessfully") {
-      navigation.navigate("Home");
+      navigation.navigate("Login");
       setEmail("");
-      setPassword("");
       setName("");
-      setImage("");
+      setPassword("");
+    } else {
+      Alert.alert(JSON.stringify(res.message));
     }
   };
 

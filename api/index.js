@@ -3,11 +3,13 @@ const bodyParser = require("body-parser");
 const mongoose = require("mongoose");
 const passport = require("passport");
 const LocalStrategy = require("passport-local").Strategy;
+const connectDb = require("./config/dbConnection");
+// const multer = require("multer");
 
 const dotenv = require("dotenv").config();
 
 const app = express();
-const port = 8000;
+const port = 5002;
 const cors = require("cors");
 app.use(cors());
 
@@ -15,22 +17,11 @@ app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 app.use(passport.initialize());
 const jwt = require("jsonwebtoken");
-console.log("process.env.CONNECTION_STRING", process.env.CONNECTION_STRING);
 
-mongoose
-  .connect(process.env.CONNECTION_STRING, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-  })
-  .then(() => {
-    console.log("Connected to Mongo Db");
-  })
-  .catch((err) => {
-    console.log("Error connecting to MongoDb", err);
-  });
+connectDb();
 
 app.listen(port, () => {
-  console.log("Server running on port 8000");
+  console.log(`Server running on port ${port}`);
 });
 
 const User = require("./models/user");
@@ -38,21 +29,26 @@ const Message = require("./models/message");
 
 //End point for Register User
 
-app.post("/register", (req, res) => {
+app.post("/register", async (req, res) => {
   const { name, email, password, image } = req.body;
 
-  //Create a new user object
-  const newUser = User({ name, email, password, image });
+  const getUser = await User.findOne({ email });
+  if (getUser) {
+    res.json({ message: "Email already exist" });
+  } else {
+    //Create a new user object
+    const newUser = User({ name, email, password, image });
 
-  //save user to database
-  newUser
-    .save()
-    .then(() => {
-      res.status(200).json({ message: "User Entered Sucessfully" });
-    })
-    .catch((err) => {
-      res.status(500).json({ message: "Error regestring user!" });
-    });
+    //save user to database
+    newUser
+      .save()
+      .then(() => {
+        res.status(200).json({ message: "User Entered Sucessfully" });
+      })
+      .catch((err) => {
+        res.status(500).json({ message: "Error regestring user!" });
+      });
+  }
 });
 
 // Function for create user token
@@ -86,8 +82,8 @@ app.post("/login", (req, res) => {
       const token = createToken(user._id);
       res.status(200).json({ token });
     })
-    .catch((err) => {
-      console.log("err in finding the user", err);
+    .catch((error) => {
+      console.log("error on  in finding the user", error);
       res.status(500).json({ message: "Internal server error" });
     });
 });
@@ -100,8 +96,203 @@ app.get("/users", (req, res) => {
     .then((Users) => {
       res.status(200).json(Users);
     })
-    .catch((err) => {
-      console.log("err", err);
+    .catch((error) => {
+      console.log("error on get all user dat api", error);
       res.status(500).json({ message: "Error Fetching User" });
     });
+});
+
+// endpoint to send request to user
+app.post("/friend-request", async (req, res) => {
+  const { currentUserId, selectedUserId } = req.body;
+  try {
+    // update the receiver's friend request array
+    await User.findByIdAndUpdate(selectedUserId, {
+      $push: { friendRequests: currentUserId },
+    });
+
+    // update the sender's friend request array
+    await User.findByIdAndUpdate(currentUserId, {
+      $push: { sendFriendRequest: selectedUserId },
+    });
+    res.sendStatus(200);
+  } catch (error) {
+    res.sendStatus(500);
+  }
+});
+
+//  endpoint to show all friend request
+app.get("/get-friend-request", async (req, res) => {
+  const id = req.query.userId;
+  try {
+    const user = await User.findById(id)
+      .populate("friendRequests", "name email image")
+      .lean();
+    const friendRequest = user.friendRequests;
+    res.json(friendRequest);
+  } catch (error) {
+    console.log("error on show all friend request", error);
+    return res.status(500).json({ message: error.message });
+  }
+});
+
+app.post("/friend-request-accept", async (req, res) => {
+  try {
+    const { senderId, receiverId } = req.body;
+
+    const sender = await User.findById(senderId);
+    const receiver = await User.findById(receiverId);
+
+    sender.friends.push(receiver);
+    receiver.friends.push(sender);
+
+    sender.sendFriendRequest = sender.sendFriendRequest.filter(
+      (res) => res?.toString() !== receiverId?.toString()
+    );
+    receiver.friendRequests = receiver.friendRequests.filter(
+      (res) => res?.toString() !== senderId?.toString()
+    );
+
+    await sender.save();
+    await receiver.save();
+
+    res.status(200).json({ message: "Friend request accepted sucessfully." });
+  } catch (error) {
+    console.log("error on accept friend api", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+});
+
+// endpoint to get all user's friends
+app.get("/accepted-friend-request", async (req, res) => {
+  const id = req.query.userId;
+  try {
+    const user = await User.findById(id)
+      .populate("friends", "name email image")
+      .lean();
+    const friendRequest = user.friends;
+    res.json(friendRequest);
+  } catch (error) {
+    console.log("error on get all user friend api", error);
+    return res.status(500).json({ message: error.message });
+  }
+});
+
+const multer = require("multer");
+
+// Configure multer for handling file uploads
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, "files/");
+  },
+  filename: function (req, file, cb) {
+    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
+    cb(null, uniqueSuffix + "-" + file.originalname);
+  },
+});
+
+const upload = multer({ storage: storage });
+
+//endpoint to post Messages and store it in the backend
+app.post("/messages", upload.single("imageFile"), async (req, res) => {
+  try {
+    const { senderId, recepientId, messageType, messageText } = req.body;
+
+    const newMessage = new Message({
+      senderId,
+      recepientId,
+      messageType,
+      message: messageText,
+      timestamp: new Date(),
+      imageUrl: messageType === "image" ? req.file.path : null,
+    });
+
+    await newMessage.save();
+    res.status(200).json({ message: "Message sent Successfully" });
+  } catch (error) {
+    console.log("error on message api", error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
+// endponit to access message Receiver
+app.get("/user", async (req, res) => {
+  try {
+    const id = req.query.userId;
+    const recepientId = await User.findById(id);
+    res.json(recepientId);
+  } catch (error) {
+    res.status(500).json({ message: "Internal server error" });
+  }
+});
+
+// endpoint to fetch all message between two users
+app.get("/get-messages", async (req, res) => {
+  try {
+    const senderId = req.query.senderId;
+    const recepientId = req.query.recepientId;
+
+    const messages = await Message.find({
+      $or: [
+        { senderId: senderId, recepientId: recepientId },
+        { senderId: recepientId, recepientId: senderId },
+      ],
+    }).populate("senderId", "_id, name");
+    res.json(messages);
+  } catch (error) {
+    res.status(500).json({ message: "Internal server error" });
+  }
+});
+
+// endpoint for delete message
+app.post("/delete-messages", async (req, res) => {
+  try {
+    const { messages } = req.body;
+    if (!Array.isArray(messages) || messages.length === 0) {
+      return res.status(404).json({ message: "Invalid req body" });
+    }
+
+    await Message.deleteMany({ _id: { $in: messages } });
+
+    res.status(200).json({ message: "Messages deleted successfully" });
+  } catch (error) {
+    console.log("error on delete message api", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+});
+
+app.get("/friend-request/sent", async (req, res) => {
+  try {
+    const id = req.query.userId;
+
+    const user = await User.findById(id)
+      .populate("sendFriendRequest", "name email image")
+      .lean();
+    const sendFriendRequest = user.sendFriendRequest;
+    res.json(sendFriendRequest);
+  } catch (error) {
+    console.log("error on get sent friend request", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+});
+
+app.get("/friends", (req, res) => {
+  try {
+    const id = req.query.userId;
+
+    User.findById(id)
+      .populate("friends")
+      .then((user) => {
+        if (!user) {
+          return res.status(404).json({ message: "User not found" });
+        }
+
+        const friendIds = user.friends.map((friend) => friend._id);
+
+        res.status(200).json(friendIds);
+      });
+  } catch (error) {
+    console.log("error on get friend", error);
+    res.status(500).json({ message: "internal server error" });
+  }
 });
