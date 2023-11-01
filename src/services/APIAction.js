@@ -1,6 +1,6 @@
 import axios from "axios";
 
-var base_URL = "http://localhost:5002";
+var base_URL = "http://192.168.24.107:5002";
 
 export const registerUserApi = async (request) => {
   return new Promise(async (resolve, reject) => {
