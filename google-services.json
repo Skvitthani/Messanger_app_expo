@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1044972204415",
+    "project_id": "messangerapp-83e24",
+    "storage_bucket": "messangerapp-83e24.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1044972204415:android:8ca8bbde7f5c8f26a32a4a",
+        "android_client_info": {
+          "package_name": "com.sanketvitthani.messenger_project"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDp9dHZG2iPdBNlKYLJnU3HbnTyKrJKweE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

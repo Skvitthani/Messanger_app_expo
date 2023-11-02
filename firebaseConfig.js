@@ -1,20 +1,13 @@
 import { initializeApp } from "firebase/app";
-import { getAuth } from "firebase/auth";
-import { getFirestore } from "firebase/firestore";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyDyKhfItxVPumwnsWqJVJCl5l_u1_uLt68",
-  authDomain: "messangerapp-e9a3d.firebaseapp.com",
-  projectId: "messangerapp-e9a3d",
-  storageBucket: "messangerapp-e9a3d.appspot.com",
-  messagingSenderId: "709528092520",
-  appId: "1:709528092520:web:e8b29bf4e32c47f1b6a0dd",
-  measurementId: "G-XLLBH12CR3",
+  apiKey: "AIzaSyBL_B5Hc2IOLjkfd3zrQGSoKoUfWiSnEh0",
+  authDomain: "messangerapp-83e24.firebaseapp.com",
+  projectId: "messangerapp-83e24",
+  storageBucket: "messangerapp-83e24.appspot.com",
+  messagingSenderId: "1044972204415",
+  appId: "1:1044972204415:web:6e3ba015c1146116a32a4a",
+  measurementId: "G-2HBE80FY24",
 };
 
 const app = initializeApp(firebaseConfig);
-
-const auth = getAuth(app);
-const DB = getFirestore(app);
-
-export { auth, DB };
